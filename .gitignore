@@ -12,5 +12,6 @@
 hs_err_pid*
 
 target/
+deploy/
 scripts/data/
 scripts/log/
