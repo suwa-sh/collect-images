@@ -1,0 +1,164 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>me.suwash</groupId>
+    <artifactId>collect-images</artifactId>
+    <version>1.0.0</version>
+    <name>Collect Images</name>
+
+    <properties>
+        <dirname.assembly.work>${project.artifactId}_${project.version}</dirname.assembly.work>
+        <dir.assembly.work>${project.build.directory}/${dirname.assembly.work}</dir.assembly.work>
+    </properties>
+
+    <profiles>
+      <profile>
+          <id>local</id>
+          <activation>
+              <activeByDefault>true</activeByDefault>
+          </activation>
+          <properties>
+              <target.env>local</target.env>
+          </properties>
+      </profile>
+
+      <profile>
+          <id>IT</id>
+          <properties>
+              <target.env>IT</target.env>
+          </properties>
+      </profile>
+
+      <profile>
+          <id>ST</id>
+          <properties>
+              <target.env>ST</target.env>
+          </properties>
+      </profile>
+
+      <profile>
+          <id>production</id>
+          <properties>
+              <target.env>production</target.env>
+          </properties>
+      </profile>
+    </profiles>
+
+    <build>
+        <plugins>
+            <!-- 配布用構成の作成 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>ant</groupId>
+                        <artifactId>ant-nodeps</artifactId>
+                        <version>1.6.5</version>
+                    </dependency>
+                </dependencies>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <tasks>
+                                <!-- 実行スクリプト lib以外-->
+                                <copy
+                                    todir="${dir.assembly.work}/bin"
+                                    overwrite="no"
+                                    encoding="UTF-8">
+                                    <filterset filtersfile="env/${target.env}/filter.properties" />
+                                    <fileset dir="${project.build.scriptSourceDirectory}/bin">
+                                        <exclude name="lib/**" />
+                                    </fileset>
+                                </copy>
+                                <!-- 実行スクリプト libのみ ※バイナリを含むため置換をOFF-->
+                                <copy
+                                    todir="${dir.assembly.work}/bin"
+                                    overwrite="no"
+                                    >
+                                    <fileset dir="${project.build.scriptSourceDirectory}/bin">
+                                        <include name="lib/**" />
+                                    </fileset>
+                                </copy>
+                                <!-- plugins -->
+<!--
+                                <copy
+                                    todir="${dir.assembly.work}/plugins"
+                                    overwrite="no"
+                                    encoding="UTF-8">
+                                    <filterset filtersfile="env/${target.env}/filter.properties" />
+                                    <fileset dir="${project.build.scriptSourceDirectory}/plugins">
+                                        <include name="**/**" />
+                                    </fileset>
+                                </copy>
+-->
+                                <!-- 設定ファイル -->
+                                <copy
+                                    todir="${dir.assembly.work}/config"
+                                    overwrite="no"
+                                    encoding="UTF-8">
+                                    <filterset filtersfile="env/${target.env}/filter.properties" />
+                                    <fileset dir="${project.build.scriptSourceDirectory}/config">
+                                        <include name="**/**" />
+                                    </fileset>
+                                </copy>
+                                <!-- 環境依存ファイル ※バイナリ以外 -->
+<!--
+                                <copy
+                                    todir="${dir.assembly.work}"
+                                    overwrite="yes"
+                                    encoding="UTF-8">
+                                    <filterset filtersfile="env/${target.env}/filter.properties" />
+                                    <fileset dir="env/${target.env}/scripts">
+                                        <exclude name="**/*.enc" />
+                                    </fileset>
+                                </copy>
+-->
+                                <!-- 環境依存ファイル ※バイナリ -->
+<!--
+                                <copy
+                                    todir="${dir.assembly.work}"
+                                    overwrite="yes"
+                                    >
+                                    <fileset dir="env/${target.env}/scripts">
+                                        <include name="**/*.enc" />
+                                    </fileset>
+                                </copy>
+-->
+                                <!-- 不要ファイルを削除 -->
+                                <delete>
+                                    <fileset dir="${dir.assembly.work}">
+                                        <include name="**/.gitkeep" />
+                                    </fileset>
+                                </delete>
+                                <!-- バージョンファイルを作成 -->
+                                <echo message="${project.version}"
+                                    file="${dir.assembly.work}/version.txt"
+                                    encoding="UTF-8" />
+                                <!-- 配布用アーカイブ -->
+                                <tar
+                                    destfile="${project.build.directory}/${project.artifactId}_${project.version}_${target.env}.tar.gz"
+                                    compression="gzip">
+                                    <tarfileset dir="${project.build.directory}" mode="755">
+                                      <include name="${dirname.assembly.work}/bin/*.sh" />
+                                      <include name="${dirname.assembly.work}/bin/lib/**" />
+                                    </tarfileset>
+                                    <tarfileset dir="${project.build.directory}">
+                                      <include name="${dirname.assembly.work}/**" />
+                                      <exclude name="${dirname.assembly.work}/bin/*.sh" />
+                                      <exclude name="${dirname.assembly.work}/bin/lib/**" />
+                                    </tarfileset>
+                                </tar>
+                            </tasks>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
